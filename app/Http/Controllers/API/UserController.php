@@ -9,6 +9,17 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -65,6 +76,36 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         //
+        $user = User::findOrFail($id);
+        $this->validate($request,[
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|max:255|unique:users,email,'.$user->id,
+            ]);
+        $avatar ="profile.png";
+        if($request->password === null)
+        {
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'type' => $request->type,
+                'bio' => $request->bio,
+                'avatar' => $avatar
+            ]);
+        }
+         else
+         {
+            $user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+                'type' => $request->type,
+                'bio' => $request->bio,
+                'password' =>Hash::make($request->password),
+                'avatar' => $avatar
+            ]);
+         }
+
+        return $user;
+
     }
 
     /**
@@ -77,7 +118,7 @@ class UserController extends Controller
     {
         //
         $user = User::findOrFail($id);
-        //$user->delete();
+        $user->delete();
         return ['message' => 'user has deleted'];
     }
 }

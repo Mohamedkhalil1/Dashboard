@@ -27,8 +27,9 @@ Vue.use(VueProgressBar, {
   })
 
 // ES6 Modules or TypeScript
-import swal from 'sweetalert2'
-window.sawl = swal;
+import swal from 'sweetalert2';
+
+window.swal = swal
 
 const toast = swal.mixin({
     toast: true,
@@ -43,6 +44,7 @@ const toast = swal.mixin({
 
 let routes = [
     { path: '/dashboard', component: require('./components/Dashboard.vue').default },
+    { path: '/developer', component: require('./components/Developer.vue').default },
     { path: '/users', component: require('./components/Users.vue').default },
     { path: '/profile', component: require('./components/Profile.vue').default }
   ]
@@ -62,6 +64,22 @@ Vue.filter('upText',function(text){
     return text.charAt(0).toUpperCase() + text.slice(1)
 });
 
+
+
+Vue.component(
+    'passport-clients',
+    require('./components/passport/Clients.vue').default
+);
+
+Vue.component(
+    'passport-authorized-clients',
+    require('./components/passport/AuthorizedClients.vue').default
+);
+
+Vue.component(
+    'passport-personal-access-tokens',
+    require('./components/passport/PersonalAccessTokens.vue').default
+);
 
 
 /**

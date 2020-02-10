@@ -7,7 +7,7 @@
                     <div class="card-header">
                         <h3 class="card-title">Users Table</h3>
                         <div class="card-tools">
-                            <button class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#addNew">
+                            <button class="btn btn-success btn-sm mt-2" data-toggle="modal" data-target="#addNew" @click="createForm">
                                 <i class="fa fa-user-plus"></i> Add New
                             </button>
                         </div>
@@ -33,11 +33,12 @@
                                     <td>{{user.type | upText}}</td>
                                     <td>{{user.created_at | myDate}}</td>
                                      <td>
-                                        <a href="#">
-                                            <i class="fa fa-edit blue"></i>
+                                       <a href="#"
+                                       data-toggle="modal" data-target="#editUser">
+                                            <i class="fa fa-edit blue" @click="editShow(user)"></i>
                                         </a>
                                         /
-                                        <a href="#">
+                                        <a href ="#"  @click="deleteUser(user.id)">
                                             <i class="fa fa-trash red"></i>
                                         </a>
                                     </td>
@@ -121,6 +122,75 @@
         </div>
         <!-- End Madol -->
 
+
+         <!-- Madel -->
+        <div class="modal fade" id="editUser" tabindex="-1" role="dialog"
+            aria-labelledby="editUser" aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Edit User</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form @submit.prevent="editUser">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <input v-model="form.name" type="text" name="name"
+                            placeholder="name"
+                            class="form-control" :class="{ 'is-invalid': form.errors.has('name') }">
+                        <has-error :form="form" field="Name"></has-error>
+                    </div>
+
+                    <div class="form-group">
+                        <input v-model="form.email" type="email" name="email"
+                            placeholder="Email"
+                            class="form-control" :class="{ 'is-invalid': form.errors.has('email') }">
+                        <has-error :form="form" field="email"></has-error>
+                    </div>
+
+                    <div class="form-group">
+                        <select v-model="form.type" id="type" name="type"
+                            placeholder="Type"
+                            class="form-control" :class="{ 'is-invalid': form.errors.has('type') }">
+
+                            <option value="">Select User Role</option>
+                            <option value="admin">Admin</option>
+                            <option value="user">User</option>
+                            <option value="author">Author</option>
+
+                        </select>
+                        <has-error :form="form" field="type"></has-error>
+                    </div>
+
+                    <div class="form-group">
+                        <input v-model="form.password" type="password" name="password"
+                            placeholder="Password"
+                            class="form-control" :class="{ 'is-invalid': form.errors.has('password') }">
+                        <has-error :form="form" field="password"></has-error>
+                    </div>
+
+                    <div class="form-group">
+                        <textarea v-model="form.bio" name="type"
+                            placeholder="Short bio for user (optional)" id="bio"
+                            class="form-control" :class="{ 'is-invalid': form.errors.has('bio') }">
+                        <has-error :form="form" field="bio"></has-error>
+                        </textarea>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger btn-sm" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                </div>
+            </form>
+            </div>
+        </div>
+        </div>
+        <!-- End Madol -->
+
     </div>
     <!-- end container -->
 </template>
@@ -129,9 +199,11 @@
     export default {
         data () {
                     return {
+                    editMode : true ,
                     users : {},
                     // Create a new form instance
                     form: new Form({
+                        id:'',
                         name: '',
                         email:'',
                         type:'',
@@ -143,7 +215,132 @@
                 },
         methods:{
 
+                editUser(){
+                      this.$Progress.start();
+                      const swalWithBootstrapButtons =
+                        swal.mixin({
+                                    customClass: {
+                                        confirmButton: 'btn btn-success ml-3',
+                                        cancelButton: 'btn btn-danger'
+                                    },
+                                    buttonsStyling: false
+                                    })
+
+                                    swalWithBootstrapButtons.fire({
+                                    title: 'Are you sure?',
+                                    text: "user will be updated to new data",
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Yes, update it!',
+                                    cancelButtonText: 'No, cancel!',
+                                    reverseButtons: true
+                                    }).then((result) => {
+
+                                    if (result.value) {
+                                       this.form.put('api/users/'+this.form.id)
+                                        .then(()=>{
+                                                $('#editUser').modal('hide');
+                                        })
+                                        swalWithBootstrapButtons.fire(
+                                        'Updated!',
+                                        'Your file has been update.',
+                                        'success'
+                                        )
+                                        Fire.$emit('AfterEdit');
+                                    } else if (
+                                        /* Read more about handling dismissals below */
+                                        result.dismiss === swal.DismissReason.cancel
+                                    ) {
+                                        swalWithBootstrapButtons.fire(
+                                        'Cancelled',
+                                        'Your imaginary file is safe :)',
+                                        'error'
+                                        )
+                                    }
+                                    })
+                                    .catch(() => {
+                                        Swal.fire({
+                                                    title: 'ERROR',
+                                                    width: 600,
+                                                    padding: '3em',
+                                                    background: '#fff url(/images/trees.png)',
+                                                    backdrop: `
+                                                        rgba(0,0,123,0.4)
+                                                        url("/images/nyan-cat.gif")
+                                                        left top
+                                                        no-repeat
+                                                    `
+                                                    })
+                                    })
+
+
+                },
+
+                editShow(user){
+                    $('#editUser').modal('show');
+                    this.form.fill(user);
+                },
+
+                deleteUser(id){
+                        const swalWithBootstrapButtons =
+                        swal.mixin({
+                                    customClass: {
+                                        confirmButton: 'btn btn-success ml-3',
+                                        cancelButton: 'btn btn-danger'
+                                    },
+                                    buttonsStyling: false
+                                    })
+
+                                    swalWithBootstrapButtons.fire({
+                                    title: 'Are you sure?',
+                                    text: "You won't be able to revert this!",
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Yes, delete it!',
+                                    cancelButtonText: 'No, cancel!',
+                                    reverseButtons: true
+                                    }).then((result) => {
+
+                                    if (result.value) {
+
+                                        this.form.delete('api/users/'+id)
+                                        swalWithBootstrapButtons.fire(
+                                        'Deleted!',
+                                        'Your file has been deleted.',
+                                        'success'
+                                        )
+                                        Fire.$emit('AfterDelete');
+                                    } else if (
+                                        /* Read more about handling dismissals below */
+                                        result.dismiss === swal.DismissReason.cancel
+                                    ) {
+                                        swalWithBootstrapButtons.fire(
+                                        'Cancelled',
+                                        'Your imaginary file is safe :)',
+                                        'error'
+                                        )
+                                    }
+                                    })
+                                    .catch(() => {
+                                        Swal.fire({
+                                                    title: 'ERROR',
+                                                    width: 600,
+                                                    padding: '3em',
+                                                    background: '#fff url(/images/trees.png)',
+                                                    backdrop: `
+                                                        rgba(0,0,123,0.4)
+                                                        url("/images/nyan-cat.gif")
+                                                        left top
+                                                        no-repeat
+                                                    `
+                                                    })
+                                    })
+                  },
+                  createForm(){
+                            this.form.reset();
+                  },
                   loadUsers(){
+
                           axios.get('api/users').then(({ data }) => (this.users = data.data));
                   },
                   createUser(){
@@ -169,6 +366,14 @@
                     Fire.$on('AfterCreate',() => {
                         this.loadUsers();
                     });
+                     Fire.$on('AfterDelete',() => {
+                        this.loadUsers();
+                    });
+
+                      Fire.$on('AfterEdit',() => {
+                        this.loadUsers();
+                    });
+
                    // setInterval(() => this.loadUsers(),3000);
 
         },
