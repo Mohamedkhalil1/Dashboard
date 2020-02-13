@@ -16,6 +16,12 @@ window.Form = Form;
 Vue.component(HasError.name, HasError)
 Vue.component(AlertError.name, AlertError)
 
+Vue.component('pagination', require('laravel-vue-pagination'));
+
+
+import Gate from  "./gate";
+Vue.prototype.$gate = new Gate(window.user);
+
 Vue.use(VueRouter)
 
 import VueProgressBar from 'vue-progressbar'
@@ -46,7 +52,8 @@ let routes = [
     { path: '/dashboard', component: require('./components/Dashboard.vue').default },
     { path: '/developer', component: require('./components/Developer.vue').default },
     { path: '/users', component: require('./components/Users.vue').default },
-    { path: '/profile', component: require('./components/Profile.vue').default }
+    { path: '/profile', component: require('./components/Profile.vue').default },
+    { path: '*', component: require('./components/NotFound404.vue').default }
   ]
 
 const router = new VueRouter({
@@ -81,6 +88,11 @@ Vue.component(
     require('./components/passport/PersonalAccessTokens.vue').default
 );
 
+Vue.component(
+  'not-found',
+  require('./components/NotFound404.vue').default
+);
+
 
 /**
  * The following block of code may be used to automatically register your
@@ -103,5 +115,13 @@ Vue.component('example-component', require('./components/ExampleComponent.vue').
 
 const app = new Vue({
     el: '#app',
-    router
+    router,
+    data:{
+      search:''
+    },
+    methods:{
+      searchhit: _.debounce(() => {
+        Fire.$emit('Searching');
+      },1000)
+    }
 });

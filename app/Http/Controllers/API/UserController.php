@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\User;
+use Image;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -27,7 +28,10 @@ class UserController extends Controller
      */
     public function index()
     {
-        return User::latest()->paginate(10);
+        if (\Gate::allows('isAdmin') || \Gate::allows('isAuthor')) {
+            return User::latest()->paginate(5);
+        }
+       
     }
 
     /**
@@ -42,7 +46,7 @@ class UserController extends Controller
         $this->validate($request,[
                                     'name'     => 'required|string|max:255',
                                     'email'    => 'required|string|max:255|unique:users',
-                                    'password' => 'required|string|max:191'
+                                    'password' => 'required|string|min:6'
         ]);
         $avatar ="profile.png";
         return User::create([
@@ -55,15 +59,47 @@ class UserController extends Controller
             ]);
     }
 
+
     /**
      * Display the specified resource.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function profile()
     {
-        //
+        return auth('api')->user();
+    }
+
+    public function updateProfile(Request $request){
+         //
+         $user = auth('api')->user();
+        
+         $this->validate($request,[
+             'name'     => 'required|string|max:255',
+             'email'    => 'required|string|max:255|unique:users,email,'.$user->id,
+             'password' => 'sometimes|required|min:6'
+             ]);
+         
+    
+        if(!empty($request->password))
+        {
+            $request->merge([
+                'password' =>Hash::make($request->password)
+            ]);
+            $params = $request->except([
+                'avatar'
+            ]);
+        }
+        else
+        {
+            $params = $request->except([
+                'avatar' , 'password'
+            ]);
+        }
+
+      $user->update($params);
+      return $user;
     }
 
     /**
@@ -117,8 +153,21 @@ class UserController extends Controller
     public function destroy($id)
     {
         //
+        $this->authorize('isAdmin');
         $user = User::findOrFail($id);
         $user->delete();
-        return ['message' => 'user has deleted'];
+    }
+
+    public function search(Request $request)
+    {
+        
+        if($search = $request->get('q')){
+            $users = User::where(function($query) use ($search){
+                $query->where('name','LIKE',"%$search%")
+                      ->orWhere('email','LIKE',"%$search%")
+                      ->orWhere('type','LIKE',"%$search%");
+            })->paginate(5);    
+        }
+       return $users;
     }
 }

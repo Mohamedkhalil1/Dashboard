@@ -1,7 +1,7 @@
 
 <template>
     <div class="container">
-        <div class="row mt-5">
+        <div class="row mt-5" v-if="$gate.isAdminOrAuthor()">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -26,7 +26,7 @@
                                     <th>Modify</th>
                                 </tr>
 
-                                <tr v-for="user in users" :key="user.id">
+                                <tr v-for="user in users.data" :key="user.id">
                                     <td>{{user.id}}</td>
                                     <td>{{user.name}}</td>
                                     <td>{{user.email}}</td>
@@ -49,9 +49,17 @@
                         <!-- end table -->
                     </div>
                       <!-- end card body -->
+                      <div class="card-footer">
+                          <pagination :data="users"
+                             @pagination-change-page="getResults"></pagination>
+                      </div>
                 </div>
 
             </div>
+        </div>
+
+        <div v-if="!$gate.isAdminOrAuthor()">
+            <not-found></not-found>
         </div>
 
         <!-- Madel -->
@@ -214,6 +222,12 @@
                     }
                 },
         methods:{
+                getResults(page = 1){
+                    axios.get('api/users?page=' + page)
+                        .then(response => {
+                            this.users = response.data;
+                        });
+                },
 
                 editUser(){
                       this.$Progress.start();
@@ -290,7 +304,6 @@
                                     },
                                     buttonsStyling: false
                                     })
-
                                     swalWithBootstrapButtons.fire({
                                     title: 'Are you sure?',
                                     text: "You won't be able to revert this!",
@@ -300,16 +313,23 @@
                                     cancelButtonText: 'No, cancel!',
                                     reverseButtons: true
                                     }).then((result) => {
-
                                     if (result.value) {
-
-                                        this.form.delete('api/users/'+id)
-                                        swalWithBootstrapButtons.fire(
-                                        'Deleted!',
-                                        'Your file has been deleted.',
-                                        'success'
-                                        )
+                                        this.form.delete('api/users/'+id).then(()=>{
+                                            swalWithBootstrapButtons.fire(
+                                            'Deleted!',
+                                            'Your file has been deleted.',
+                                            'success'
+                                            )
                                         Fire.$emit('AfterDelete');
+                                        })
+                                        .catch(()=>{
+                                               swal.fire({
+                                                    icon: 'error',
+                                                    title: 'Oops...',
+                                                    text: 'Something went wrong!',
+                                                })
+                                            });
+                                       
                                     } else if (
                                         /* Read more about handling dismissals below */
                                         result.dismiss === swal.DismissReason.cancel
@@ -322,7 +342,7 @@
                                     }
                                     })
                                     .catch(() => {
-                                        Swal.fire({
+                                        swal.fire({
                                                     title: 'ERROR',
                                                     width: 600,
                                                     padding: '3em',
@@ -340,8 +360,13 @@
                             this.form.reset();
                   },
                   loadUsers(){
+                         if(this.$gate.isAdminOrAuthor()){
+                                axios.get('api/users').then(({ data }) => (this.users = data));
+                         }
+                         else{
 
-                          axios.get('api/users').then(({ data }) => (this.users = data.data));
+                         }
+                         
                   },
                   createUser(){
                                 this.$Progress.start();
@@ -362,6 +387,17 @@
                   }
         },
         created(){
+
+                    Fire.$on('Searching',() => {
+                        let query =this.$parent.search;
+                        axios.get('api/findUser?q='+query)
+                        .then((data)=>{
+                           this.users= data.data;
+                        })
+                        .catch(()=>{
+
+                        });
+                    });
                     this.loadUsers();
                     Fire.$on('AfterCreate',() => {
                         this.loadUsers();
